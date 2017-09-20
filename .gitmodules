@@ -1,0 +1,3 @@
+[submodule "modules/LOVEDEBUG"]
+	path = modules/LOVEDEBUG
+	url = https://github.com/Ranguna/LOVEDEBUG

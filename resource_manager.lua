@@ -19,9 +19,10 @@ function resource_manager.create(loader, pedantic)
 end
 
 function resource_manager:load(name, ...)
-  if self.__data[name] then return self end
-  self.__data[name] = list.create(self.__loader(name, ...))
-  return self
+  if not self.__data[name] then
+      self.__data[name] = self.__loader(...)
+  end
+  return self.__data[name]
 end
 
 function resource_manager:fetch(name)

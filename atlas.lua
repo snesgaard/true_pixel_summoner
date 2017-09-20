@@ -26,14 +26,22 @@ function Atlas:play(args)
     function resolve_boundry.normal(frame_data)
         frame_data.frame = from
         frame_data.df = 1
+        frame_data.event.loop = true
     end
     function resolve_boundry.bounce(frame_data)
         frame_data.df = frame_data.frame == to and -1 or 1
+        frame_data.event.loop = true
         --frame_data.frame = frame_data.frame == to and to -1 or from + 1
     end
     function resolve_boundry.reverse(frame_data)
         frame_data.frame = to
         frame_data.df = -1
+        frame_data.event.loop = true
+    end
+    function resolve_boundry.once(frame_data)
+        frame_data.time = to
+        frame_data.df = 0
+        frame_data.event.finish = true
     end
 
     -- Updates the sprite with a given tiem step
@@ -61,11 +69,16 @@ function Atlas:play(args)
         return frame_data
     end
 
+    local function reset_events(frame_data, dt)
+        frame_data.event = {}
+        return update_sprite(frame_data, dt)
+    end
+
     return love.update
-        :scan(update_sprite, {frame = from, time = 0, df = df})
+        :scan(reset_events, {frame = from, time = 0, df = df})
         :map(
             function(frame_data)
-                return anime_frames[frame_data.frame]
+                return anime_frames[frame_data.frame], frame_data.event
             end
         )
 end
