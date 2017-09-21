@@ -11,6 +11,7 @@ function ctrl.request(id, type, lock) request(id, type, lock) end
 
 function ctrl.force(id, type, lock) force(id, type, lock) end
 
+--[[
 local request_handles = {}
 function request_handles.idle(atlas)
     return atlas:play{"idle"}
@@ -24,8 +25,9 @@ end
 function request_handles.attack(atlas)
     return atlas:play{"attack", from = 2, loop = "once"}
 end
+--]]
 
-function ctrl.create(id, atlas)
+function ctrl.create(id, atlas, request_handles)
     local function check_id(__id)
         return id == __id
     end
@@ -42,12 +44,13 @@ function ctrl.create(id, atlas)
         :compact()
         :flatMapLatest(function(f) return f(atlas) end)
         :map(function(frame, event) return frame, id, event end)
-        :subscribe(frames)
+        --:subscribe(frames)
 
     merged_request
         :subscribe(function(id, _, lock)
             __lock[id] = lock
         end)
+    return merged_request
 end
 
 function ctrl.destroy(id) cancel(id) end

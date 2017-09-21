@@ -1,3 +1,4 @@
+local OP = require "op"
 local list = require "list"
 local dictionary = require "dictionary"
 
@@ -12,7 +13,7 @@ end
 function resource_manager.create(loader, pedantic)
   local state = {
     __predantic = pedantic,
-    __loader = loader,
+    __loader = loader or OP.identity,
     __data = dictionary.create()
   }
   return setmetatable(state, resource_manager)

@@ -1,8 +1,7 @@
 local summoner = {}
 
-function summoner.load(resources)
-    resource_manager:load("res/sword_summoner/", "res/sword_summoner/")
-    
+function summoner.atlas(atlas_bank)
+    atlas_bank:load("res/sword_summoner/", "res/sword_summoner/")
 end
 
 function summoner.animation_control()
