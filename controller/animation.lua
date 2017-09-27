@@ -1,3 +1,5 @@
+local Dictionary = require "dictionary"
+
 local ctrl = {}
 
 local request = rx.Subject.create()
@@ -51,6 +53,33 @@ function ctrl.create(id, atlas, request_handles)
             __lock[id] = lock
         end)
     return merged_request
+end
+
+function ctrl.create(atlas, request_handles)
+    local sprite = Dictionary.create({
+        request = rx.Subject.create(),
+        force = rx.Subject.create(),
+        cancel = rx.Subject.create(),
+        events = rx.Subject.create(),
+        lock = rx.BehaviorSubject.create(false),
+    })
+
+    local merged_request = rx.Observable.merge(
+        sprite.force,
+        sprite.request:filter(function() return not sprite.lock:getValue() end)
+    )
+        :takeUntil(sprite.cancel)
+
+    sprite.frames = merged_request
+        :map(function(__type) return request_handles[__type] end)
+        :compact()
+        :flatMapLatest(function(f) return f(atlas) end)
+
+    merged_request
+        :map(function(_, __lock) return __lock end)
+        :subscribe(sprite.lock)
+
+    return sprite
 end
 
 function ctrl.destroy(id) cancel(id) end

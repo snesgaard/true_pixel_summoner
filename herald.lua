@@ -3,6 +3,19 @@ local Dictionary = require "dictionary"
 local Herald = {}
 Herald.__index = Herald
 
+function Herald.__tostring(h)
+    return h.__carriers
+        :map(
+            function(carrier)
+                return carrier:map(
+                    function(b)
+                        return b:getValue()
+                    end
+                )
+            end
+        ):__tostring()
+end
+
 function Herald.create()
     local self = {
         __carriers = Dictionary.create()

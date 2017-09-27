@@ -157,7 +157,8 @@ if hitbox_border_dic.has_key(0xff00):
     entity_seq = hitbox_border_dic[0xff00]
 
 def center_of_mass((minx, miny, maxx, maxy)):
-    return (minx + maxx) * 0.5, (miny + maxy) * 0.5
+    #return (minx + maxx) * 0.5, (miny + maxy) * 0.5
+    return (minx + maxx) * 0.5, maxy
 
 def shape((minx, miny, maxx, maxy)):
     return (maxx - minx) * 0.5, (maxy - miny) * 0.5

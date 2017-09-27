@@ -1,6 +1,6 @@
 local palette = {
-    hero = "#64c2ecff",
-    enemy = "#f74356ff",
+    hero = "#2482bcff",
+    villian = "#e73346ff",
     bg = "#000000ff",
     misc1 = "#8daabaff",
     misc2 = "#bae1f2ff"

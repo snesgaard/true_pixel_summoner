@@ -1,7 +1,12 @@
 local summoner = {}
 
 function summoner.atlas(atlas_bank)
-    atlas_bank:load("res/sword_summoner/", "res/sword_summoner/")
+    return atlas_bank:load("res/sword_summoner/", "res/sword_summoner/")
+end
+
+function summoner.stats(id, gamestate)
+    return gamestate
+        :set("health", id, 30)
 end
 
 function summoner.animation_control()

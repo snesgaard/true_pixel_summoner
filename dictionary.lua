@@ -26,6 +26,15 @@ function dictionary.create(d)
   return setmetatable(data, dictionary)
 end
 
+function dictionary.from_keyvalue(keys, values)
+    local data = {}
+    for _, keyval in pairs(list.zip(keys, values)) do
+        local k, v = unpack(keyval)
+        data[k] = v
+    end
+    return setmetatable(data, dictionary)
+end
+
 function dictionary:filter(f)
   local ret = dictionary.create()
   for key, val in pairs(self) do
