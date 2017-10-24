@@ -5,10 +5,7 @@ local DEFINE = {
     margin = 2,
     shape = {60, 15, 5},
     bar = {10, 5},
-    font = gfx.newImageFont("res/font.png",
-    " abcdefghijklmnopqrstuvwxyz" ..
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZ0" ..
-    "123456789.,!?-+/():;%&`'*#=[]\"")
+    font = constants.font()
 }
 
 local health = {}
@@ -67,22 +64,22 @@ function health.draw(x, y, _, _, _, damage, health, theme, bg, __type)
     DEFINE.font:setFilter("nearest", "nearest")
     gfx.setColor(255, 255, 255)
     gfx.printf(
-        health2string(damage, health), x, y + h * 0.5 - DEFINE.font:getHeight() / 4, w *  2, "center",
-        0, 0.5, 0.5
+        health2string(damage, health), x, y, w, h, "center", "middle"
     )
     --gfx.setColor(bg)
+
     gfx.printf(
-        __type, x, y - 7, w *  2, "center",
-        0, 0.5, 0.5
+        __type, x, y - 7, w, h, "center"
     )
+
     --gfx.rectangle("fill", x, y + h * 0.5 - 3, w, h - m * 4)
 end
 
 function health.draw_observer(painter)
-    return function(pos, hp, dmg, faction, __type)
+    return function(arg)
         painter:register(
-            health.draw, pos[1], pos[2], 0, 0, 0, hp, dmg,
-            palette.bg, palette[faction], __type
+            health.draw, arg.pos[1], arg.pos[2], 0, 0, 0, arg.dmg, arg.hp,
+            palette.bg, arg.theme, arg.name
         )
     end
 end
@@ -112,6 +109,34 @@ function health.create(id, evolution, painter)
         )
         :subscribe(health.draw_observer(painter))
     return Dictionary.create({cancel = cancel})
+end
+
+function health.create(id, broadcaster, painter)
+    rx.Observable.combineLatest(
+        broadcaster:channel(id, "health"),
+        broadcaster:channel(id, "damage"),
+        broadcaster:channel(id, "faction"),
+        broadcaster:channel(id, "placement"),
+        function(hp, dmg, faction, place)
+            print("faction", faction, palette[faction])
+            local __type_text = get_type(id):upper()
+            local pos = constants.battle_position(place, faction)
+            return Dictionary.create{
+                pos = pos:add(Vec2(0, 15)),
+                theme = palette[faction],
+                hp = hp,
+                dmg = dmg,
+                name = __type_text
+            }
+        end
+    )
+        :flatMapLatest(
+            function(arg)
+                return love.update:map(OP.constant(arg))
+            end
+        )
+        :subscribe(health.draw_observer(painter))
+    return Dictionary.create{cancel = cancel}
 end
 
 return health

@@ -120,6 +120,8 @@ function Observable:subscribe(onNext, onError, onCompleted)
   if type(onNext) == 'table' then
     return self._subscribe(onNext)
   else
+      -- Paranoid hack
+      onError = onError or print
     return self._subscribe(Observer.create(onNext, onError, onCompleted))
   end
 end

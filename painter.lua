@@ -36,4 +36,9 @@ function painter:register(brush, x, y, r, sx, sy, ...)
     self.brushes = self.brushes:insert(data)
 end
 
+function painter:listener()
+    local me = self
+    return function(...) me:register(...) end
+end
+
 return painter

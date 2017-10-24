@@ -5,8 +5,9 @@ function summoner.atlas(atlas_bank)
 end
 
 function summoner.stats(id, gamestate)
-    return gamestate
-        :set("health", id, 30)
+    return {health = 30}
+    --return gamestate
+    --    :set("health", id, 30)
 end
 
 function summoner.animation_control()

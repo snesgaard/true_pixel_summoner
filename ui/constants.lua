@@ -10,4 +10,12 @@ function constants.battle_position(placement, faction)
     end
 end
 
+constants.font = coroutine.wrap(function()
+    local font = gfx.newImageFont("res/font.png",
+    " abcdefghijklmnopqrstuvwxyz" ..
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZ0" ..
+    "123456789.,!?-+/():;%&`'*#=[]\"")
+    while true do coroutine.yield(font) end
+end)
+
 return constants

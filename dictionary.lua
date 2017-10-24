@@ -35,10 +35,19 @@ function dictionary.from_keyvalue(keys, values)
     return setmetatable(data, dictionary)
 end
 
+function dictionary:to_keyvalue()
+    local keys, values = list.create(), list.create()
+    for k, v in pairs(self) do
+        keys[#keys + 1] = k
+        values[#values + 1] = v
+    end
+    return keys, values
+end
+
 function dictionary:filter(f)
   local ret = dictionary.create()
   for key, val in pairs(self) do
-    ret[key] = f(val) and val or nil
+    ret[key] = f(key, val) and val or nil
   end
   return ret
 end

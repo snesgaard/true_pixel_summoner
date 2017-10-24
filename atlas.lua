@@ -137,7 +137,7 @@ function Atlas.create(base_path)
 end
 
 function Atlas.draw(x, y, r, sx, sy, sheet, frame)
-    gfx.draw(sheet, frame.quad, x, y, r, sx, sy, frame.ox, frame.oy)
+    gfx.draw(sheet, frame.quad, x, y, r, 1 * sx, 1 * sy , frame.ox, frame.oy)
 end
 
 function Atlas:draw_observer(painter)

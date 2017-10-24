@@ -1,5 +1,7 @@
 #partial_hitbox=$(addprefix ./build/, $(notdir $(frames:.png=.lua)))
-frames=$(addprefix ./build/, idle.png cast.png attack.png wisp.png goblin.png imp2.png undine.png\
+frames=$(addprefix ./build/, idle.png cast.png attack.png wisp.png goblin.png\
+ 															imp2.png undine.png undine_cast.png goblin_cast.png\
+															imp_cast.png gibbles.png\
 				)
 boundries=$(frames:.png=.lua)
 info=info.lua
@@ -43,12 +45,28 @@ $(sheet): $(frames)
 	@python $(generate_script) -t 0.35 -w 64 -e 64 -f $(@:.lua=.png)\
 					-l $(@:.png=.lua) $< $(addprefix ./boundry/, $(notdir $<))
 
+./build/goblin_cast.%: ./frame/goblin_cast.png
+	@python $(generate_script) -t 0.2 -w 64 -e 64 -f $(@:.lua=.png)\
+					-l $(@:.png=.lua) $< $(addprefix ./boundry/, $(notdir $<))
+
 ./build/imp2.%: ./frame/imp2.png
 	@python $(generate_script) -t 0.25 -w 64 -e 64 -f $(@:.lua=.png)\
 					-l $(@:.png=.lua) $< $(addprefix ./boundry/, $(notdir $<))
 
+./build/imp_cast.%: ./frame/imp_cast.png
+	@python $(generate_script) -t 0.1 -w 64 -e 64 -f $(@:.lua=.png)\
+					-l $(@:.png=.lua) $< $(addprefix ./boundry/, $(notdir $<))
+
 ./build/undine.%: ./frame/undine.png
 	@python $(generate_script) -t 0.35 -w 64 -e 64 -f $(@:.lua=.png)\
+					-l $(@:.png=.lua) $< $(addprefix ./boundry/, $(notdir $<))
+
+./build/undine_cast.%: ./frame/undine_cast.png
+	@python $(generate_script) -t 0.15 -w 64 -e 64 -f $(@:.lua=.png)\
+					-l $(@:.png=.lua) $< $(addprefix ./boundry/, $(notdir $<))
+
+./build/gibbles.%: ./frame/gibbles.png
+	@python $(generate_script) -t 0.15 -w 64 -e 64 -f $(@:.lua=.png)\
 					-l $(@:.png=.lua) $< $(addprefix ./boundry/, $(notdir $<))
 
 create_build_dirs:

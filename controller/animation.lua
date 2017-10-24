@@ -29,32 +29,6 @@ function request_handles.attack(atlas)
 end
 --]]
 
-function ctrl.create(id, atlas, request_handles)
-    local function check_id(__id)
-        return id == __id
-    end
-
-    local merged_request = rx.Observable.merge(
-        force,
-        request:filter(function(id) return not __lock[id] end)
-    )
-
-    merged_request
-        :takeUntil(cancel:filter(check_id))
-        :filter(check_id)
-        :map(function(_, type) return request_handles[type] end)
-        :compact()
-        :flatMapLatest(function(f) return f(atlas) end)
-        :map(function(frame, event) return frame, id, event end)
-        --:subscribe(frames)
-
-    merged_request
-        :subscribe(function(id, _, lock)
-            __lock[id] = lock
-        end)
-    return merged_request
-end
-
 function ctrl.create(atlas, request_handles)
     local sprite = Dictionary.create({
         request = rx.Subject.create(),
@@ -68,12 +42,18 @@ function ctrl.create(atlas, request_handles)
         sprite.force,
         sprite.request:filter(function() return not sprite.lock:getValue() end)
     )
+    --[[
+    local merged_request = sprite.request
+        :filter(function() return not sprite.lock:getValue() end)
+        :merge(force)
         :takeUntil(sprite.cancel)
-
+        ]]--
     sprite.frames = merged_request
         :map(function(__type) return request_handles[__type] end)
         :compact()
+        :distinctUntilChanged()
         :flatMapLatest(function(f) return f(atlas) end)
+        --:flatMapLatest(function(f) return love.update end)
 
     merged_request
         :map(function(_, __lock) return __lock end)

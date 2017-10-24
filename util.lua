@@ -1,4 +1,13 @@
+require "math"
+local palette = require "ui/palette"
+
 local util = {}
+
+function util.wait(timespan)
+    return love.update
+        :scan(function(time, dt) return time + dt end, 0)
+        :filter(function(t) return timespan < t end)
+end
 
 function util.span(timespan)
     return love.update
@@ -7,8 +16,33 @@ function util.span(timespan)
         :map(function(time) return time / timespan end)
 end
 
-function util.wooble(visualstate, id)
-    util.span(0.5)
+function util.sine(period, phase)
+    local f = 2.0 * math.pi / period
+    local p = 2.0 * math.pi * (phase or 0)
+    return love.update
+        :scan(function(time, dt) return time + dt end, 0)
+        :map(function(time) return math.sin(f * time + p) end)
+end
+
+function util.period(period)
+    return util.sine(period  * 2)
+        :scan(
+            function(agg, next)
+                agg.prev = agg.next
+                agg.next = next
+                return agg
+            end,
+            {next = -1}
+        )
+        :filter(
+            function(agg)
+                return agg.prev * agg.next < 0
+            end
+        )
+end
+
+function util.wooble()
+    return util.span(0.5)
         :map(
             function(t)
                 local rounds = 5
@@ -16,7 +50,6 @@ function util.wooble(visualstate, id)
                 return amp * math.sin(rounds * math.pi * 2 * t)
             end
         )
-        :subscribe(function(w) visualstate:mutate("wooble", id, w) end)
 end
 
 function util.hexcolor(hex)
@@ -31,6 +64,38 @@ function gfx.setColor(str, ...)
     else
         return _old_setColor(str, ...)
     end
+end
+
+util.target_corner = coroutine.wrap(
+    function(x, y, _, sx, sy)
+        local curve = love.math.newBezierCurve(
+            {
+                -15, 0,
+                -3, 0,
+                0, 0,
+                0, -3,
+                0, -15,
+            }
+        )
+        while true do
+            gfx.push()
+            gfx.translate(x, y)
+            gfx.scale(sx, sy)
+            gfx.setLineWidth(2)
+            gfx.line(curve:render())
+            gfx.pop()
+            x, y, _, sx, sy = coroutine.yield()
+        end
+    end
+)
+
+function util.entity_target(x, y, amp)
+    y = y + 5
+    gfx.setColor(palette.bg)
+    util.target_corner(x + 25 + amp, y + amp, 0, 1, 1)
+    util.target_corner(x - 25 - amp, y + amp, 0, -1, 1)
+    util.target_corner(x - 25 - amp, y - 80 - amp, 0, -1, -1)
+    util.target_corner(x + 25 + amp, y - 80 - amp, 0, 1, -1)
 end
 
 return util

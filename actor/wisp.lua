@@ -5,8 +5,9 @@ function wisp.atlas(atlas_bank)
 end
 
 function wisp.stats(id, gamestate)
-    return gamestate
-        :set("health", id, 5)
+    return {health = 5}
+    --return gamestate
+    --    :set("health", id, 5)
 end
 
 
