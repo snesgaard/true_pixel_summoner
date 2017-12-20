@@ -6,7 +6,7 @@ local palette = Dictionary.create({
     bg = "#bfbfbfff",
     misc1 = "#8daabaff",
     misc2 = "#bae1f2ff",
-    select = "#dadf54ff"
+    select = "#cabf54ff"
 })
 
 return palette

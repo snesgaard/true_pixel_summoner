@@ -3,8 +3,9 @@ local palette = require "ui/palette"
 
 local util = {}
 
-function util.wait(timespan)
-    return love.update
+function util.wait(timespan, update)
+    update = update or love.update
+    return update
         :scan(function(time, dt) return time + dt end, 0)
         :filter(function(t) return timespan < t end)
 end
@@ -16,16 +17,17 @@ function util.span(timespan)
         :map(function(time) return time / timespan end)
 end
 
-function util.sine(period, phase)
+function util.sine(period, phase, update)
     local f = 2.0 * math.pi / period
     local p = 2.0 * math.pi * (phase or 0)
-    return love.update
+    update = update or love.update
+    return update
         :scan(function(time, dt) return time + dt end, 0)
         :map(function(time) return math.sin(f * time + p) end)
 end
 
-function util.period(period)
-    return util.sine(period  * 2)
+function util.period(period, update)
+    return util.sine(period  * 2, 0, update)
         :scan(
             function(agg, next)
                 agg.prev = agg.next

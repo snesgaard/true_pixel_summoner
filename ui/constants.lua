@@ -15,6 +15,7 @@ constants.font = coroutine.wrap(function()
     " abcdefghijklmnopqrstuvwxyz" ..
     "ABCDEFGHIJKLMNOPQRSTUVWXYZ0" ..
     "123456789.,!?-+/():;%&`'*#=[]\"")
+    font:setFilter("nearest", "nearest")
     while true do coroutine.yield(font) end
 end)
 

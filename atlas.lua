@@ -136,14 +136,14 @@ function Atlas.create(base_path)
     return setmetatable(atlas, Atlas)
 end
 
-function Atlas.draw(x, y, r, sx, sy, sheet, frame)
-    gfx.draw(sheet, frame.quad, x, y, r, 1 * sx, 1 * sy , frame.ox, frame.oy)
+function Atlas:draw(frame, x, y, r, sx, sy)
+    x  = x  or 0
+    y  = y  or 0
+    r  = r  or 0
+    sx = sx or 1
+    sy = sy or 1
+    gfx.draw(self.sheet, frame.quad, x, y, r, sx, sy, frame.ox, frame.oy)
 end
 
-function Atlas:draw_observer(painter)
-    return function(frame, x, y, r, sx, sy)
-        painter:register(Atlas.draw, x, y, r, sx, sy, self.sheet, frame)
-    end
-end
 
 return Atlas

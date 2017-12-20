@@ -42,4 +42,6 @@ function op.identity(a) return a end
 
 function op.constant(a) return function() return a end end
 
+function op.clamp(l, u) return function(a) return math.max(l, math.min(a, u)) end end
+
 return op

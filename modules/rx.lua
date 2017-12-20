@@ -1966,7 +1966,7 @@ end
 function Subject:onNext(...)
   if not self.stopped then
     for i = 1, #self.observers do
-      self.observers[i]:onNext(...)
+      if self.observers[i] then self.observers[i]:onNext(...) end
     end
   end
 end

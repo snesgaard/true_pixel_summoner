@@ -1,5 +1,5 @@
 gfx = love.graphics
-require "modules/LOVEDEBUG/lovedebug"
+--require "modules/LOVEDEBUG/lovedebug"
 List = require "list"
 Dictionary = require "dictionary"
 OP = require "op"
@@ -11,11 +11,8 @@ rx = require "modules.rx"
 ui = require "ui"
 require "modules.rx-love"
 Atlas = require "atlas"
-Property = require "property"
 Database = require "database"
 Broadcaster = require "broadcaster"
-Herald = require "herald"
-animation_ctrl = require "controller/animation"
 
 love.keypressed
     :filter(function(k) return k == "escape" end)
@@ -26,8 +23,10 @@ love.load = rx.Subject.create()
 
 love.load:subscribe(
     function()
-        _DebugSettings.OverlayColor = {30, 0, 50}
-        _DebugSettings.HaltExecution = false
+        if _DebugSettings then
+            _DebugSettings.OverlayColor = {30, 0, 50}
+            _DebugSettings.HaltExecution = true
+        end
         gfx.setDefaultFilter("nearest", "nearest")
     end
 )
@@ -52,12 +51,12 @@ function gfx.printf(str, x, y, w, h, align, valign, sx, sy)
     sx = sx or 1
     sy = sy or sx
     local font = gfx.getFont()
-    if valign == "middle" then
-        y = y + h * 0.5 - font:getHeight() * 0.25
+    if valign == "center" then
+        y = y + h * 0.5 - font:getHeight() * 0.5 * sy
     elseif valign == "bottom" then
-        y = y + h - font:getHeight() * 0.5
+        y = y + h - font:getHeight() * sy
     end
-    __old_printf(str, x, y, w * 2, align, 0, 0.5 * sx, 0.5 * sy)
+    __old_printf(str, x, y, w / sx, align, 0, sx, sy)
 end
 
 _coroutine_resume = coroutine.resume
@@ -101,5 +100,5 @@ love.dilated_update = love.update
     :with(love.slowdown)
     :map(function(dt, s) return dt * s end)
 
-require "test/combat_pick"
+require "test/node_test"
 --require "test/test_battle"
