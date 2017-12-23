@@ -1952,8 +1952,10 @@ function Subject:subscribe(onNext, onError, onCompleted)
   table.insert(self.observers, observer)
 
   return Subscription.create(function()
-    for i = 1, #self.observers do
-      if self.observers[i] == observer then
+    -- HACK REMOVAL BUG FIX
+    local obs = {unpack(self.observers)}
+    for i = 1, #obs do
+      if obs[i] == observer then
         table.remove(self.observers, i)
         return
       end
@@ -1965,8 +1967,10 @@ end
 -- @arg {*...} values
 function Subject:onNext(...)
   if not self.stopped then
-    for i = 1, #self.observers do
-      if self.observers[i] then self.observers[i]:onNext(...) end
+    -- HACK REMOVAL BUG FIX
+    local obs = {unpack(self.observers)}
+    for i = 1, #obs do
+      if obs[i] then obs[i]:onNext(...) end
     end
   end
 end
@@ -1975,8 +1979,10 @@ end
 -- @arg {string=} message - A string describing what went wrong.
 function Subject:onError(message)
   if not self.stopped then
-    for i = 1, #self.observers do
-      self.observers[i]:onError(message)
+    -- HACK REMOVAL BUG FIX
+    local obs = {unpack(self.observers)}
+    for i = 1, #obs do
+      obs[i]:onError(message)
     end
 
     self.stopped = true
@@ -1986,8 +1992,10 @@ end
 --- Signal to all Observers that the Subject will not produce any more values.
 function Subject:onCompleted()
   if not self.stopped then
-    for i = 1, #self.observers do
-      self.observers[i]:onCompleted()
+    -- HACK REMOVAL BUG FIX
+    local obs = {unpack(self.observers)}
+    for i = 1, #obs do
+      obs[i]:onCompleted()
     end
 
     self.stopped = true
@@ -2045,8 +2053,10 @@ function AsyncSubject:subscribe(onNext, onError, onCompleted)
   table.insert(self.observers, observer)
 
   return Subscription.create(function()
-    for i = 1, #self.observers do
-      if self.observers[i] == observer then
+    -- HACK REMOVAL BUG FIX
+    local obs = {unpack(self.observers)}
+    for i = 1, #obs do
+      if obs[i] == observer then
         table.remove(self.observers, i)
         return
       end
@@ -2067,9 +2077,10 @@ end
 function AsyncSubject:onError(message)
   if not self.stopped then
     self.errorMessage = message
-
-    for i = 1, #self.observers do
-      self.observers[i]:onError(self.errorMessage)
+    -- HACK REMOVAL BUG FIX
+    local obs = {unpack(self.observers)}
+    for i = 1, #obs do
+      obs[i]:onError(self.errorMessage)
     end
 
     self.stopped = true
@@ -2079,12 +2090,14 @@ end
 --- Signal to all Observers that the AsyncSubject will not produce any more values.
 function AsyncSubject:onCompleted()
   if not self.stopped then
-    for i = 1, #self.observers do
+    -- HACK REMOVAL BUG FIX
+    local obs = {unpack(self.observers)}
+    for i = 1, #obs do
       if self.value then
-        self.observers[i]:onNext(util.unpack(self.value))
+        obs[i]:onNext(util.unpack(self.value))
       end
 
-      self.observers[i]:onCompleted()
+      obs[i]:onCompleted()
     end
 
     self.stopped = true

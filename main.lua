@@ -100,5 +100,6 @@ love.dilated_update = love.update
     :with(love.slowdown)
     :map(function(dt, s) return dt * s end)
 
-require "test/node_test"
+--require "test/node_test"
 --require "test/test_battle"
+require "test/pos_test"
