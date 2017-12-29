@@ -44,6 +44,11 @@ function dictionary:to_keyvalue()
     return keys, values
 end
 
+function dictionary:values()
+    local _, values = self:to_keyvalue()
+    return values
+end
+
 function dictionary:filter(f)
   local ret = dictionary.create()
   for key, val in pairs(self) do

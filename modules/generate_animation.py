@@ -7,21 +7,17 @@ import math
 import string
 import os
 
-parser = argparse.ArgumentParser(description='Crops frames and extracts hitbox info')
+sys.path.append('./frame')
+import  info
+
+parser = argparse.ArgumentParser(
+    description='Crops frames and extracts hitbox info'
+)
 parser.add_argument(
     "-f", "--frame", dest = "frame", help = "Output path for frame"
 )
 parser.add_argument(
-    "-l", "--lua", dest = "lua", help = "Output path for info file"
-)
-parser.add_argument(
-    "-w", "--width", dest = "width", help = "Width of animation frame"
-)
-parser.add_argument(
-    "-e", "--height", dest = "height", help = "height of animation frame"
-)
-parser.add_argument(
-    "-t", "--time", dest = "time", help = "Duration of the animation"
+    '-i', "--info", dest = "lua", help = "Output path for info file"
 )
 parser.add_argument(
     "-u", "--fullframe", dest = "fullframe", action = 'store_true',
@@ -40,26 +36,52 @@ if args.lua is None:
 if args.frame is None:
     print "Please provide frame file path"
     sys.exit(-2)
-if args.width is None:
-    print "Please provide frame width"
-    sys.exit(-3)
-if args.height is None:
-    print "Please provide frame height"
-    sys.exit(-4)
 #if args.time is None:
 #    print "Please provide frame time"
 #    sys.exit(-5)
 
-frame_shape = (int(args.height), int(args.width))
+class Info:
+    def __init__(self, path, width, height, time, boundry = None, start = 1, end = -1):
+        self.path = path
+        self.width = width
+        self.height = height
+        self.boundry = boundry
+        self.time = time
+        self.start = start
+        self.end = end
 
-if len(args.path) < 1:
-    print "Please provide animation frame and hitbox in that order"
-    sys.exit(-5)
-animation_im = cv2.imread(args.path[0], -1)
+
+info = getattr(info, args.path[0])(Info)
+
+print info, info.path, info.width, info.height, info.time
+
+frame_shape = (int(info.height), int(info.width))
+
+#if len(args.path) < 1:
+#    print "Please provide animation frame and hitbox in that order"
+#    sys.exit(-5)
+animation_im = cv2.imread(info.path, -1)
 # Encode hitbox color as hexadecimal numbers
 hitbox_im = np.zeros(animation_im.shape, dtype = "uint32")
-if len(args.path) > 1:
-    hitbox_im = cv2.imread(args.path[1], 1).astype("uint32")
+if info.boundry > 1:
+    hitbox_im = cv2.imread(info.boundry, 1).astype("uint32")
+
+frame_start = info.start * frame_shape[1]
+frame_end = info.end * frame_shape[1]
+# Crop frames
+#print("frame_start", args.path[0], frame_start, frame_end)
+if frame_end < 0:
+#    print("frame_start", args.path[0], frame_start, frame_end)
+#    print(animation_im.shape, frame_start)
+    animation_im = animation_im[:, frame_start:]
+#    print(animation_im.shape)
+    hitbox_im    = hitbox_im[:, frame_start:]
+else:
+    animation_im = animation_im[:, frame_start:frame_end]
+    hitbox_im    = hitbox_im[:, frame_start:frame_end]
+
+#sys.exit(-1)
+#print(animation_im.shape)
 hitbox_im_hash = hitbox_im[:, :, 0] + np.left_shift(hitbox_im[:, :, 1], 8) \
                 + np.left_shift(hitbox_im[:, :, 2], 16)
 
@@ -239,7 +261,7 @@ output_str += "\t\tframe_size = {0},\n".format(format2lua(str(frame_size_seq)))
 output_str += "\t\twidth = {0},\n".format(format2lua(str(width_seq)))
 output_str += "\t\theight = {0},\n".format(format2lua(str(height_seq)))
 output_str += "\t\thitbox = {{\n{0}\n\t\t}},\n".format(hitbox_str)
-output_str += "\t\ttime = {0},\n".format(args.time or 1)
+output_str += "\t\ttime = {0},\n".format(info.time or 1)
 output_str += "\t},\n"
 
 cv2.imwrite(args.frame, final_frame)

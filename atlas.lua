@@ -121,13 +121,14 @@ function Atlas.create(base_path)
             )
             --Attach x offset, y offset and time to each frame
             :zip(
-                hit.offset_x, hit.offset_y,
-                List.duplicate(hit.time, anime_size)
+                hit.offset_x, hit.offset_y
+--                List.duplicate(hit.time, anime_size)
             )
             :map(
                 function(arg)
                     return Dictionary.create(
-                        {quad = arg[1], ox = arg[2], oy = arg[3], time = arg[4]}
+                        --{quad = arg[1], ox = arg[2], oy = arg[3], time = arg[4]}
+                        {quad = arg[1], ox = arg[2], oy = arg[3]}
                     )
                 end
             )

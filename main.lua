@@ -102,4 +102,10 @@ love.dilated_update = love.update
 
 --require "test/node_test"
 --require "test/test_battle"
-require "test/pos_test"
+--require "test/pos_test"
+--require "test/address_test"
+--require "test/battle"
+--require "test/animation"
+require "test/sprite"
+--Node = require "node"
+--Node.find(b, "../bro/so")

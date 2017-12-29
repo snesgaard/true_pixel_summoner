@@ -10,6 +10,10 @@ local INPUT = {
 local Node = {}
 Node.__index = Node
 
+function Node.__tostring(node)
+    local name = node.name:getValue()
+    return name and string.format("Node <%s>", name) or "Node"
+end
 
 function Node.create(setup, ...)
     local self = {
@@ -23,21 +27,83 @@ function Node.create(setup, ...)
 
         draw           = rx.Subject.create(),
 
-        __parent_draw  = rx.Subject.create(),
-        __parent_world = rx.Subject.create(),
-        __parent_name  = rx.Subject.create(),
+        parent         = rx.BehaviorSubject.create(),
 
-        __named_nodes  = Dictionary.create(),
+        --__named_nodes  = Dictionary.create(),
 
-        bridges    = {}
+        name           = rx.BehaviorSubject.create(),
     }
 
     for _, name in pairs(INPUT) do self[name] = rx.Subject.create() end
 
     self = setmetatable(self, Node)
 
-    self.__parent_draw
-        :switch()
+    local function unregister_cb(p, n)
+        p:unregister(n)
+    end
+
+    local function register_cb(p, n)
+        p:register(n, self)
+    end
+
+    local function check_name_parent(p, n)
+        return p ~= nil and n ~= nil
+    end
+
+
+
+    self.parent
+        :scan(
+            function(agg, parent)
+                agg.prev = agg.next
+                agg.next = parent
+                return agg
+            end,
+            {}
+        )
+        :map(function(agg) return agg.prev end)
+        :with(self.name)
+        :filter(check_name_parent)
+        :subscribe(unregister_cb)
+
+    self.parent
+        --:skipUntil(self.name)
+        :with(self.name)
+        :filter(check_name_parent)
+        :subscribe(register_cb)
+
+    self.name
+        --:skipUntil(self.parent)
+        :scan(
+            function(agg, parent)
+                agg.prev = agg.next
+                agg.next = parent
+                return agg
+            end,
+            {}
+        )
+        :map(function(agg) return agg.prev end)
+        :with(self.parent)
+        :filter(check_name_parent)
+        :subscribe(function(n, p) unregister_cb(p, n) end)
+
+    self.name
+        --:skipUntil(self.parent)
+        :with(self.parent)
+        :filter(check_name_parent)
+        :subscribe(function(n, p) register_cb(p, n) end)
+
+
+    self.parent
+        :flatMapLatest(
+            function(p)
+                if not p then
+                    return rx.Observable.never()
+                else
+                    return p.draw
+                end
+            end
+        )
         :with(self.position, self.angle, self.scale)
         :subscribe(
             function(_, p, a, s)
@@ -51,7 +117,17 @@ function Node.create(setup, ...)
         )
 
     rx.Observable.combineLatest(
-            self.__parent_world:switch():startWith(Vec2(0, 0)),
+            self.parent
+                :flatMapLatest(
+                    function(p)
+                        if not p then
+                            return rx.Observable.of(Vec2(0, 0))
+                        else
+                            return p.world_position
+                        end
+                    end
+                )
+                :compact(),
             self.scale, self.angle, self.position
         ,
         function(o, s, a, p)
@@ -60,62 +136,61 @@ function Node.create(setup, ...)
     )
         :subscribe(self.world_position)
 
+    self.parent
+        :flatMapLatest(
+            function(p)
+                if not p then
+                    return rx.Observable.never()
+                else
+                    return p.update
+                end
+            end
+        )
+        :subscribe(self.update)
+
+    for _, name in pairs(INPUT) do
+        self.parent
+            :flatMapLatest(
+                function(p)
+                    if not p then
+                        return rx.Observable.never()
+                    else
+                        return p[name]
+                    end
+                end
+            )
+            :subscribe(self[name])
+    end
+
     if setup then setup(self, ...) end
 
     return self
 end
 
-local function fetch_bridge(node, name)
-    if node.bridges[name] then
-        return node.bridges[name]
+
+function Node:find(address)
+    address = string.gsub(address, '%.%.', 'parent')
+    local parts = string.split(address, '/')
+    local node = rx.BehaviorSubject.create(self)
+    for _, name in ipairs(parts) do
+        local __node = node:getValue()
+        node = __node[name]
+        if node == nil then return end
     end
-
-    local bridge = rx.Subject.create()
-
-    bridge
-        :switch()
-        :subscribe(node[name])
-    node.bridges[name] = bridge
-
-    return bridge
+    --print(List.create(unpack(parts)))
+    return node
 end
 
-function Node:set_update(node)
-    node = node or {}
-
-    local bridge = fetch_bridge(self, "update")
-    bridge(node.update or love.update:map(OP.mul(0)))
-end
-
-function Node:set_input(node)
-    node = node or {}
-    for _, name in pairs(INPUT) do
-        local bridge = fetch_bridge(self, name)
-        bridge(node[name] or rx.Subject.create())
+function Node:register(address, node)
+    if self[address] then
+        print(string.format("Named node %s already assigned", address))
+        return
     end
+    self[address] = rx.BehaviorSubject.create(node)
 end
 
-function Node:set_transform(node)
-    node = node or {}
-    self.__parent_world(node.world_position or rx.Subject.create())
+function Node:unregister(address)
+    self[address] = nil
 end
-
-function Node:set_draw(node)
-    node = node or {}
-    self.__parent_draw(node.draw or rx.Subject.create())
-end
-
-function Node:find(name)
-    return self.__named_nodes[name]
-end
-
-function Node:register(name)
-
-Node.__null = coroutine.wrap(
-    function()
-        local s = rx.Subject.create()
-        while true do coroutine.yield(s) end
-    end
-)
 
 return Node
