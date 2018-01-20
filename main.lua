@@ -16,6 +16,30 @@ Broadcaster = require "broadcaster"
 
 love.keypressed
     :filter(function(k) return k == "escape" end)
+    --:subscribe(love.event.quit)
+
+local ctrl_pressed  = love.keypressed
+    :filter(OP.equal("lctrl"))
+    :map(OP.constant(true))
+local ctrl_released = love.keyreleased
+    :filter(OP.equal("lctrl"))
+    :map(OP.constant(false))
+local ctrl_state = rx.Observable.merge(ctrl_pressed, ctrl_released)
+
+local esc_pressed   = love.keypressed
+    :filter(OP.equal("escape"))
+    :map(OP.constant(true))
+local esc_released  = love.keyreleased
+    :filter(OP.equal("escape"))
+    :map(OP.constant(false))
+local esc_state     = rx.Observable.merge(esc_pressed, esc_released)
+
+local function __do_and(a, b)
+    return a and b
+end
+
+rx.Observable.combineLatest(ctrl_state, esc_state, __do_and)
+    :filter(function(v) return v end)
     :subscribe(love.event.quit)
 
 love.load = rx.Subject.create()
@@ -100,12 +124,15 @@ love.dilated_update = love.update
     :with(love.slowdown)
     :map(function(dt, s) return dt * s end)
 
+love.draw = rx.Subject.create()
 --require "test/node_test"
 --require "test/test_battle"
 --require "test/pos_test"
 --require "test/address_test"
---require "test/battle"
+require "test/battle"
+--require "test/tween"
+--require "test/sprite"
 --require "test/animation"
-require "test/sprite"
+--require "test/interaction"
 --Node = require "node"
 --Node.find(b, "../bro/so")

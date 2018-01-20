@@ -20,7 +20,7 @@ local function __do_load()
     sprite.name("sprite")
     anime.name("yo")
 
-    sprite.image("idle")
+    --sprite.image("wisp")
     anime:set_animation("cast")
 
     base.position(Vec2(200, 200))

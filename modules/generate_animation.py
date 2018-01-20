@@ -41,7 +41,7 @@ if args.frame is None:
 #    sys.exit(-5)
 
 class Info:
-    def __init__(self, path, width, height, time, boundry = None, start = 1, end = -1):
+    def __init__(self, path, width, height, time, boundry = None, start = 0, end = -1):
         self.path = path
         self.width = width
         self.height = height

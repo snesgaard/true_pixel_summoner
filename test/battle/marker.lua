@@ -9,7 +9,9 @@ return function(node)
     node.animate
         :flatMapLatest(
         function()
-            return Tween.log(0.3, node.update)
+            return Tween.linear(0.3, node.update)
+                :sigmoid()
+                :lerp(0, 1)
         end
         )
         :map(function(t) return math.pi * (1 - t) end)
@@ -23,15 +25,9 @@ return function(node)
         :flatMapLatest(
             function()
                 return Tween.sine(1.5, -0.25, node.update)
+                    :lerp(1, 1.5)
             end
         )
-        :map(
-            function(v)
-                v = 0.5 * v + 0.5
-                return 0.25 * v + 1.0
-            end
-        )
-        --:tap(print)
         :subscribe(node.__scale)
 
 

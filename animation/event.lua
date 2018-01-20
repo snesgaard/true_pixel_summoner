@@ -2,13 +2,13 @@ local Event = {}
 Event.__index = Event
 
 function Event.__tostring(event)
-    local s = "Event(%f) = %s"
-    return string.format(s, event.time, event.name)
+    local s = "Event <%s>"
+    return string.format(s, event.type)
 end
 
-function Event.create(name, time, args)
+function Event.create(type, ...)
     local this = {
-        name = name, time = time, args = args
+        type = type, args = {...}
     }
     return setmetatable(this, Event)
 end

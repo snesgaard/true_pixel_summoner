@@ -1,55 +1,78 @@
-local Dictionary = require "dictionary"
+local Tween = require "tween"
+local Event = require "animation/event"
 
-local __do_nothing = coroutine.wrap(
-    function()
-        while true do coroutine.yield() end
-    end
-)
+local Player = {}
+Player.__index = Player
 
-local function set_animation(node, name)
-    local player = node.animations[name]
-    if player then
-        local function __do_play(dt, node) player:play(dt, node) end
-        node.__current_player(coroutine.wrap(__do_play))
-        node.__current_events(player.event)
-        node.__current_name(name)
+function __get_event(parent)
+    if parent then
+        return parent.event
     else
-        node.__current_player(__do_nothing)
-        node.__current_events(rx.Observable.never)
-        node.__current_name("")
+        return rx.Subject.create()
     end
 end
 
-return function(node, animations)
-    node.animations        = animations or Dictionary.create()
-    node.loop              = Dictionary.create()
-    node.default_animation = rx.BehaviorSubject.create("")
-    --node.set_animation     = rx.Subject.create()
+return function(node, name, time, frames, atlas, loop)
+    time = time * #frames
+    node.name(name)
 
-    node.__current_player  = rx.BehaviorSubject.create()
-    node.__current_events  = rx.Subject.create()
-    node.__current_name    = rx.BehaviorSubject.create()
-    node.events            = node.__current_events:switch()
+    node.image   = rx.Subject.create()
+    node.frame   = rx.Subject.create()
+    node.atlas   = rx.Subject.create()
+    node.event   = rx.Subject.create()
+    node.current = rx.BehaviorSubject.create(1)
 
-    node.set_animation = set_animation
+    node.parent
+        :map(function(p) return p and p:find('../frame') or nil end)
+        :subscribe(node.frame)
 
-    node.update
-        :with(node.__current_player)
-        :filter(function(_, p) return p end)
-        :subscribe(function(dt, player) player(dt, node) end)
+    node.parent
+        :map(function(p) return p and p:find('../image') or nil end)
+        :compact()
+        :subscribe(function(i) i(name) end)
 
-    node.events
-        :filter(OP.equal("done"))
-        :with(node.__current_name, node.default_animation)
-        :map(
-            function(name, default)
-                if node.loop[name] then
-                    return node, name
-                else
-                    return node, default
-                end
+    node.parent
+        :map(function(p) return p and p:find('../atlas') or nil end)
+        :compact()
+        :subscribe(function(a) a(atlas) end)
+
+    frametween = loop and Tween.loop or Tween.linear
+    frametween = frametween(time, node.update)
+
+    frametween
+        :step(1, #frames)
+        :subscribe(
+            function(f) node.current(f) end,
+            print,
+            function()
+                node.event(Event.create("done"))
+            end)
+    --    :with(node.frame)
+        --:tap(print)
+    --    :subscribe(
+            --function(f, dst) if dst then dst(f) end end,
+            --print,
+            --function()
+        --        node.event(Event.create("done"))
+        --    end
+        --)
+--    node.current:subscribe(print)
+    node.frame
+        :flatMapLatest(
+            function(dst)
+                return node.current
             end
         )
-        :subscribe(node.set_animation)
+        :with(node.frame)
+        :subscribe(
+            function(f, dst)
+                if dst then dst(f) end
+            end
+        )
 
+
+    node.event
+        :skipUntil(node.parent)
+        :with(node.parent:map(__get_event))
+        :subscribe(function(e, p) p(e) end)
 end

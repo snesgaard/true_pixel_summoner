@@ -1,7 +1,6 @@
 local Dictionary = require "dictionary"
 local List       = require "list"
-local Track      = require "animation/track"
-local Player     = require "animation/player"
+local PNode      = require "animation/playernode"
 
 local Atlas = {}
 Atlas.__index = Atlas
@@ -76,20 +75,11 @@ function Atlas:animations()
 
     local animations = Dictionary.create()
     for name, frames in pairs(self.images) do
-        local time        = hitboxes[name].time
-        local size        = #frames
-        local frame_track = Track.create()
-            :keyframe{1, 0, interpolation = "linear", map = math.floor}
-            :keyframe{size, time * (size - 1), interpolation = "step", map = math.floor}
-            :keyframe{size, time * size, interpolation = "step"}
-            -- HACK to ensure stable framerate
-        local image_track = Track.create()
-            :keyframe{name, 0, interpolation = "step"}
+        local time = hitboxes[name].time
 
-        local player = Player.create()
-            :add("frame", frame_track, '../frame')
-            :add("image", image_track, '../image')
-        animations[name] = player
+        animations[name] = function(node, loop)
+            PNode(node, name, time, frames, self, loop)
+        end
     end
     return animations
 end

@@ -171,10 +171,13 @@ end
 function Node:find(address)
     address = string.gsub(address, '%.%.', 'parent')
     local parts = string.split(address, '/')
-    local node = rx.BehaviorSubject.create(self)
+    local node = self
     for _, name in ipairs(parts) do
-        local __node = node:getValue()
-        node = __node[name]
+        if node.getValue then
+            node = node:getValue()
+        end
+        --local __node = node:getValue()
+        node = node[name]
         if node == nil then return end
     end
     --print(List.create(unpack(parts)))
@@ -186,7 +189,7 @@ function Node:register(address, node)
         print(string.format("Named node %s already assigned", address))
         return
     end
-    self[address] = rx.BehaviorSubject.create(node)
+    self[address] = node--rx.BehaviorSubject.create(node)
 end
 
 function Node:unregister(address)

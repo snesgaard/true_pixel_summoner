@@ -2,6 +2,9 @@ local palette = require "ui/palette"
 local constants = require "ui/constants"
 local tool = require "ui/tool"
 local util = require "util"
+local InterNode = require "interaction_node"
+local misc = require "pileomisc"
+local Node = require "node"
 
 local Menu = {}
 Menu.__index = Menu
@@ -60,39 +63,9 @@ local function setup_draw(node)
         )
 end
 
-function setup_input(node)
-    node.keypressed
-        :map(
-            function(key)
-                local keymap = {up = -1, down = 1}
-                return keymap[key], key
-            end
-        )
-        :filter(function(dir) return dir end)
-        :flatMap(
-            function(dir, key)
-                local term = node.keyreleased
-                    :filter(OP.equal(key))
-                return util.period(0.2, node.update)
-                    :takeUntil(term)
-                    :map(OP.constant(dir))
-                    --:startWith(dir)
-            end
-        )
-        :with(node.selected, node.items)
-        :map(
-            function(dir, selected, items)
-                if not selected then
-                    selected = dir == -1 and 1 or 0
-                end
-                selected = selected - 1
-                return (selected + dir) % #items + 1
-            end
-        )
-        :subscribe(node.selected)
-end
 
-function Menu:__call(node, items)
+local function Menu(node, items)
+    InterNode(node)
     node.items    = rx.BehaviorSubject.create(items)
     node.selected = rx.BehaviorSubject.create(nil)
     node.theme    = {
@@ -101,9 +74,53 @@ function Menu:__call(node, items)
     }
 
     setup_draw(node)
-    setup_input(node)
+    --setup_input(node)
+
+    node.revive
+        :map(function() return palette.hero end)
+        :subscribe(node.theme.normal)
+    node.dormant
+        :map(function() return palette.villian end)
+        :subscribe(node.theme.normal)
+
+
+    node.revive
+        :with(node.selected)
+        :flatMapLatest(
+            function(_, i)
+                i = i or -1
+                return misc.selector(items, {up = -1, down = 1}, i, node)
+                    :takeUntil(node.dormant)
+            end
+        )
+        :subscribe(node.selected)
+
+    node.revive
+        :flatMapLatest(
+            function()
+                return node.keypressed:takeUntil(node.dormant)
+            end
+        )
+        :filter(function(key) return key == "space" end)
+        :flatMapLatest(function() return node.selected:take(1) end)
+        :compact()
+        :map(function(s) return items[s] end)
+        :subscribe(node.publish)
+
+    node.revive
+        :flatMapLatest(
+            function()
+                return node.keypressed:takeUntil(node.dormant)
+            end
+        )
+        :filter(OP.equal("escape"))
+        :subscribe(node.reject)
+
+    node.revive()
 end
+
+return Menu
 
 --setmetatable(Menu, Menu)
 
-return setmetatable({}, Menu)
+--return setmetatable({}, Menu)

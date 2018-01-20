@@ -15,7 +15,19 @@ local function __do_load()
 
     a.position(Vec2(100, 100))
 
-    print(b:find('../position'):getValue())
+    print(c:find('../../B/../position'):getValue())
+
+    A = rx.Subject.create()
+
+    A
+        :window(2)
+        :compact()
+        :subscribe(print)
+
+    A(1)
+    A({})
+    A(2)
+    A(3)
 end
 
 love.load:subscribe(__do_load)

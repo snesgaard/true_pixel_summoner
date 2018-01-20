@@ -1,19 +1,22 @@
+local Sprite = require "sprite"
+local Animation = require "animation"
+local Node = require "node"
+
 local hero = {}
 
-function hero.visual(node)
-    node.color = rx.BehaviorSubject.create({100, 100, 200})
+function hero.visual(node, atlas)
+    Sprite(node, atlas)
+    node.image("idle")
+    node.frame(1)
+    node.name("sprite")
+    node.scale(Vec2(2, 2))
 
-    local function __do_draw(_, c)
-        gfx.setColor(unpack(c))
-        local w, h = 25, 100
-        gfx.rectangle("fill", -w, -h, w + w, h)
-    end
+    local player = Node.create(Animation.Control, atlas)
 
-    node.draw
-        :with(node.color)
-        :subscribe(__do_draw)
+    player.name("animation")
+    player.parent(node)
 
-    node.name("visual")
+    player.set_animation("alchemist", true)
 end
 
 return hero

@@ -6,12 +6,14 @@ local Tween  = require "tween"
 local Misc   = require "pileomisc"
 local OP     = require "op"
 local Animation = require "animation"
+local Menu   = require "ui/menu"
 
 local actor_types = {
     hero     = require "test/battle/hero",
     enemy    = require "test/battle/enemy",
     selector = require "test/battle/selector",
-    attack   = require "test/battle/attack"
+    attack   = require "test/battle/attack",
+    fire     = require "test/battle/fire"
 }
 
 local setup = {
@@ -20,36 +22,6 @@ local setup = {
 
 love.draw = rx.Subject.create()
 
-local function create_animation(attacker, defender)
-    local function __get_move(attacker, defender)
-        local from = attacker.world_position:getValue()
-        local to   = defender.world_position:getValue()
-        return to:sub(from):sub(Vec2(30, 0))
-    end
-
-    local move = __get_move(attacker, defender)
-
-    local player = Animation.Player.create()
-    local attacker_motion = Animation.Track.create()
-        :keyframe{Vec2(0, 0), 0, interpolation = "sigmoid"}
-        :keyframe{move, 1.5, interpolation = "linear"}
-        :keyframe{move, 2.5, interpolation = "sigmoid"}
-        :keyframe{Vec2(0, 0), 5, interpolation = "linear"}
-    local defender_motion = Animation.Track.create()
-        :keyframe{Vec2(0, 0), 1.5, interpolation = "sigmoid"}
-        :keyframe{Vec2(0, -50), 2.0, interpolation = "sigmoid"}
-        :keyframe{Vec2(0, 0), 2.5, interpolation = "sigmoid"}
-    player
-        :add(
-            "attack_movement", attacker_motion,
-            attacker:find("visual").position
-        )
-        :add(
-            "defender_motion", defender_motion,
-            defender:find("visual").position
-        )
-    return player
-end
 
 local function __do_load()
     local w, h = gfx.getWidth(), gfx.getHeight()
@@ -62,69 +34,81 @@ local function __do_load()
 
     local root = Node.create()
 
+    local atlas = Animation.Atlas.create('res/sword_summoner')
+
     local function init_base(p, type)
         local base   = Node.create()
-        local visual = Node.create(actor_types[type].visual)
+        local visual = Node.create(actor_types[type].visual, atlas)
 
         visual.parent(base)
         base.parent(root)
 
         base.position(p)
+
+        base.name(string.format("%s %s", type, tostring(p)))
         return base
     end
 
-    local hero_bases = List.range(4)
-        :map(get_hero_pos)
-        :map(function(p) return init_base(p, "hero") end)
 
     local enemy_bases = List.range(4)
         :map(get_enemy_pos)
         :map(function(p) return init_base(p, "enemy") end)
+    local hero_bases = List.range(2)
+        :map(get_hero_pos)
+        :map(function(p) return init_base(p, "hero") end)
+
 
     root.parent(love)
 
-    local hero_selector = Node.create(
-        actor_types.selector, hero_bases,
-        {left = -1, right = 1, approve = "space", reject = "q"}
-    )
-    hero_selector.name("Hero")
-    local enemy_selector = Node.create(
-        actor_types.selector, enemy_bases,
-        {left = -1, right = 1, approve = "space", reject = "q"}
-    )
+    --hero_bases[2]:find('sprite').scale(Vec2(2.3, 2.3))
+    hero_bases[1]:find('sprite/animation').set_animation("fencer_cast", true)
 
+    local triggers = {}
 
-    hero_selector.parent(root)
-    enemy_selector.parent(root)
-    enemy_selector.active(false)
-    hero_selector.active(true)
+    local cache = {}
 
-    enemy_selector.active:subscribe(print)
-    root.keypressed
-        :filter(function(key) return key == "r" end)
-        :subscribe(function() hero_selector.active(true) end, print)
-    root.keypressed
-        :filter(OP.equal("w"))
-        :subscribe(function() enemy_selector.active(true) end, print)
-
-    hero_selector.selection
-        :filter(function(v)
-            return v ~= nil
-        end)
-        :subscribe(
-            function(v)
-                enemy_selector.active(true)
-            end,
-            print
+    function triggers.begin(prev)
+        local hero_selector = Node.create(
+            actor_types.selector, hero_bases,
+            {left = -1, right = 1, approve = "space", reject = "backspace"},
+            cache.hero
         )
+        hero_selector.name("Hero")
+        hero_selector.parent(root)
+        --if cache.hero then hero_selector.candidate() end
+        hero_selector.publish:subscribe(
+            function(hero, i)
+                --print(hero:find("sprite/animation").set_animation("alchemist_attack", false))
+                cache.hero = i
+            end
+        )
+        hero_selector.next:subscribe(triggers.dispatch_menu)
+    end
+    function triggers.dispatch_menu(prev)
+        local items = {"attack", "fire"}
+        local node = Node.create(Menu, items)
+        node.parent(prev)
+        node.next:subscribe(triggers.select_enemy)
+    end
+    function triggers.select_enemy(prev)
+        local enemy_selector = Node.create(
+            actor_types.selector, enemy_bases,
+            {left = -1, right = 1, approve = "space", reject = "backspace"}
+        )
+        enemy_selector.parent(prev)
+        enemy_selector.next:subscribe(triggers.completed)
+    end
+    function triggers.completed(prev, results)
+        local hero, move, enemy = unpack(results)
+        prev.meltdown()
+        local player = Node.create(actor_types[move], hero, enemy)
+        player.parent(root)
+        player.done:subscribe(function() triggers.begin(root) end)
+    end
 
-    enemy_selector.selection
-        :filter(function(v) return v == nil end)
-        :subscribe(function()
-            print("revival")
-            hero_selector.active(true)
-        end)
+    triggers.begin(root)
 
+    --[[
     enemy_selector.selection
         :filter(function(v) return v ~= nil end)
         :with(hero_selector.selection)
@@ -133,17 +117,17 @@ local function __do_load()
             function(enemy, hero)
                 hero_selector.parent()
                 enemy_selector.parent()
-                local player = create_animation(
+                local player = Node.create(
+                    actor_types.fire,
                     hero_bases[hero], enemy_bases[enemy]
                 )
-                root.update
-                    :subscribe(coroutine.wrap(function(dt)
-                        player:play(dt)
-                        while true do coroutine.yield() end
-                    end))
+                player.parent(root)
             end
         )
-
+    ]]--
+    gfx.setBackgroundColor(50, 80, 100)
 end
+
+--love.draw:subscribe(function() print("draw!") end)
 
 love.load:subscribe(__do_load)

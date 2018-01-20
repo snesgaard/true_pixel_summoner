@@ -5,46 +5,28 @@ local Sprite   = require "sprite"
 local Tween    = require "tween"
 local Misc     = require "pileomisc"
 local OP       = require "op"
-local Track    = require "animation/track"
-local KeyFrame = require "animation/keyframe"
-local Player   = require "animation/player"
+local Animation = require "animation"
 
 love.draw = rx.Subject.create()
 
-local function __do_draw()
-    gfx.setColor(255, 255, 255)
-    gfx.rectangle("fill", -25, -25, 50, 50)
-end
-
 local function __do_load()
-    local root = Node.create()
-    root.draw:subscribe(__do_draw)
+    local atlas = Animation.Atlas.create('res/sword_summoner')
+
+    local root   = Node.create()
+    local sprite = Node.create(Sprite, atlas)
+    local anime  = Node.create(Animation.Control, atlas)
+
     root.parent(love)
+    sprite.parent(root)
+    anime.parent(sprite)
 
-    local root2 = Node.create()
-    root2.draw:subscribe(__do_draw)
-    root2.parent(love)
+    sprite.position(Vec2(200, 200))
+    anime.set_animation("idle", true)
 
-    local t = Track.create()
-        :keyframe{Vec2(100, 200), 0, interpolation = "sigmoid", map = hacker}
-        :keyframe{Vec2(1000, 200), 2, interpolation = "sigmoid"}
-
-    local t2 = Track.create()
-        :keyframe{Vec2(100, 400), 0, interpolation = "linear"}
-        :keyframe{Vec2(1000, 400), 2, interpolation = "linear"}
-        :event("tag1", 0.5)
-        :event("tag2", 1.5)
-
-    player = Player.create()
-        :add("sig", t, root.position)
-        :add("line", t2, root2.position)
-
-    player.event:subscribe(print)
-    root.update
-        :subscribe(coroutine.wrap(function(dt)
-            player:play(dt)
-            while true do coroutine.yield() end
-        end))
+    love.keypressed
+        :subscribe(function() anime.set_animation("chant", true) end)
+    --sprite.frame:subscribe(print)
+    --sprite.image:subscribe(print)
 end
 
 love.load:subscribe(__do_load)
